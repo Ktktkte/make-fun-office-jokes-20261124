@@ -9,7 +9,7 @@ const MAX_CHARS = 199;
 // validateEntry enforces the kit gate on the raw entry text:
 // non-empty, within the char cap, a single line, not whitespace-only.
 // It throws a descriptive error on the first violated rule.
-function validateEntry(text: string): void {
+function validateEntry(text) {
   if (text.length === 0 || text.length > MAX_CHARS) {
     throw new Error(`entry must be 1-${MAX_CHARS} characters, got ${text.length}`);
   }
