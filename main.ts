@@ -1,22 +1,36 @@
-import { readFileSync, writeFileSync, mkdirSync } from "node:fs";
-import { fileURLToPath } from "node:url";
+import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 
-// Office joke entry: copy the single line from entry.txt into the output dir.
-const here = dirname(fileURLToPath(import.meta.url));
-const source = join(here, "entry.txt");
-const line = readFileSync(source, "utf8");
+// Gate from the kit (competition.yaml): entry must be 1-199 characters,
+// a single line, not only whitespace.
+const MAX_CHARS = 199;
 
-if (line.trim().length === 0 || line.trim().length >= 200) {
-  throw new Error("entry.txt must hold one joke under 200 characters");
+// validateEntry enforces the kit gate on the raw entry text:
+// non-empty, within the char cap, a single line, not whitespace-only.
+// It throws a descriptive error on the first violated rule.
+function validateEntry(text: string): void {
+  if (text.length === 0 || text.length > MAX_CHARS) {
+    throw new Error(`entry must be 1-${MAX_CHARS} characters, got ${text.length}`);
+  }
+  if (text.trim().length === 0) {
+    throw new Error("entry must not be only whitespace");
+  }
+  if (text.includes("\n") || text.includes("\r")) {
+    throw new Error("entry must be a single line");
+  }
 }
 
-const outDir = process.env.MAKEFUN_OUTPUT_DIR ?? "/output";
+const scriptDir = dirname(fileURLToPath(import.meta.url));
+const entryPath = join(scriptDir, "entry.txt");
+
+const text = readFileSync(entryPath, "utf8");
+validateEntry(text);
+
+const outDir = process.env.MAKEFUN_OUTPUT_DIR;
+if (!outDir) {
+  throw new Error("MAKEFUN_OUTPUT_DIR is not set");
+}
+
 mkdirSync(outDir, { recursive: true });
-const target = join(outDir, "entry.txt");
-writeFileSync(target, line);
-
-// Confirm the copy landed before exiting, so a silent write failure is loud.
-if (readFileSync(target, "utf8") !== line) {
-  throw new Error("entry.txt was not copied correctly");
-}
+writeFileSync(join(outDir, "entry.txt"), text, "utf8");
